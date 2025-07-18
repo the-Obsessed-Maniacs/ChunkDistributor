@@ -33,21 +33,9 @@ set( PROJECT_SOURCES
 )
 
 qt_add_plugin( DesignerPlugin AlgoData.h AlgoGfx.h AlgoGfx.cpp Algo.ui Algo.h Algo.cpp DesignerPlugin.h DesignerPlugin.cpp )
-qt_add_executable( MotionTest AnimatePosition.h AnimatePosition.cpp MotionTest.h MotionTest.cpp MotionTest.ui )
 qt_add_executable( ${PROJECT_NAME} ${PROJECT_SOURCES} )
 qt_add_resources( ${PROJECT_NAME} PREFIX "/" BASE ${CMAKE_CURRENT_SOURCE_DIR}
 	FILES ReadMe.md
-)
-
-set_target_properties( MotionTest
-    PROPERTIES
-        WIN32_EXECUTABLE TRUE
-)
-target_link_libraries( MotionTest
-    PUBLIC
-        Qt::Core
-        Qt::Gui
-        Qt::Widgets
 )
 
 target_link_libraries( DesignerPlugin PUBLIC
@@ -61,7 +49,6 @@ set_target_properties(${PROJECT_NAME}
     PROPERTIES
         WIN32_EXECUTABLE TRUE
 )
-
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
         Qt::Core
