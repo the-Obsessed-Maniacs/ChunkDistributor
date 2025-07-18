@@ -13,30 +13,12 @@ find_package( Qt${QT_VERSION_MAJOR}
 		UiPlugin
 )
 qt_standard_project_setup()
-
-set( PROJECT_SOURCES
-    main.cpp
-    PackerTester.ui
-    PackerTester.h
-    PackerTester.cpp
-    PackerTester.rc
-	Stage.h
-	Stage.cpp
-	AnimatePosition.h
-	AnimatePosition.cpp
-	Algo.h
-	Algo.ui
-	Algo.cpp
-	AlgoData.h
-	AlgoGfx.h
-	AlgoGfx.cpp
-)
-
-qt_add_plugin( DesignerPlugin AlgoData.h AlgoGfx.h AlgoGfx.cpp Algo.ui Algo.h Algo.cpp DesignerPlugin.h DesignerPlugin.cpp )
-qt_add_executable( ${PROJECT_NAME} ${PROJECT_SOURCES} )
+qt_add_plugin( DesignerPlugin )
+qt_add_executable( ${PROJECT_NAME} )
 qt_add_resources( ${PROJECT_NAME} PREFIX "/" BASE ${CMAKE_CURRENT_SOURCE_DIR}
 	FILES ReadMe.md
 )
+add_subdirectory( "src" )
 
 target_link_libraries( DesignerPlugin PUBLIC
     Qt::Core
