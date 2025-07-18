@@ -125,9 +125,8 @@ If it is zero, the case `no soultion` has happened and the algorithm shall end -
 
     do {
     	while ( a_id < avail.count() && bytes_left )
-    		if ( bytes_left >= chunk[ avail[ a_id ] ].size )	take_available()
-    		else												++a_id
-
+    		if ( bytes_left >= chunk[ avail[ a_id ] ].size )    take_available()
+    		else                                                ++a_id
     } until ( avail.isEmpty() || !make_available() )
 
 ## Future?
@@ -146,9 +145,9 @@ If a data chunk contains table data, it may be precalculated, imported, or initi
 
 I suggest those variation/options to `.datachunk`:
 
-	.datachunk [	data=List(Bytes),
-					binary_filename="fn", binary_offset=offs, binary_size=byte_count,
-					labels=Hashtable(String,int)										]
+	.datachunk [    data=List(Bytes),
+	                binary_filename="fn", binary_offset=offs, binary_size=byte_count,
+	                labels=Hashtable(String,int)					  ]
    - option: `data` using this option, the data is given as a KickAssembler List of bytes - this way the chunk's content and size may change until the final pass
    - option: `binary*` imports the data in binary from a file
       - `binary_filename` is neccessary
