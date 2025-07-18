@@ -77,10 +77,11 @@ Takes the index of a chunk and inserts it into `avail` at the correct position a
 
 	void sort_into_avail( int c_id )
 	{
-		a_id = 0
-		while ( ( a_id < avail.size )
-			&& ( chunks[ c_id ].size < chunks[ avail[ a_id ] ].size )	)	++a_id
-		avail.insert( a_id++, c_id );
+	    a_id = 0
+	    while ( ( a_id < avail.size )
+		     && ( chunks[ c_id ].size < chunks[ avail[ a_id ] ].size ) )
+            ++a_id
+	    avail.insert( a_id++, c_id );
 	}
 
 ##### <u>take\_available()</u>
@@ -109,8 +110,8 @@ If it is zero, the case `no soultion` has happened and the algorithm shall end -
     bool make_available()
     {
 		if ( pages[ p_id ].solution.isEmpty )
-			if ( p_id == 0 )					return false
-			else 								--p_id
+			if ( p_id == 0 )               return false
+			else                           --p_id
 
 		assert ( ! pages[ p_id ].solution.isEmpty ) // safeguard, should never happen!
 
@@ -157,19 +158,19 @@ I suggest those variation/options to `.datachunk`:
 ...
 
    	.datachunk brot_machen:{
-   				lda wurst,x
-				sta brot
-				rts
-		@wurst:	.by wurst1, wurst2 	}
+   	            lda wurst,x
+	            sta brot
+	            rts
+	    @wurst: .by wurst1, wurst2 	}
 
    	=== [same as]
 
    	.datachunk {
-   		@brot_machen:
-   				lda wurst,x
-				sta brot
-				rts
-		@wurst:	.by wurst1, wurst2 	}
+   	    @brot_machen:
+   	            lda wurst,x
+	            sta brot
+	            rts
+	    @wurst: .by wurst1, wurst2 	}
 
 This is the second variation.  Simply declaring the following block as a `.datachunk` ... with one global label declaring its start in standard KickAssembler syntax.  And another global label being implicitly declared inside the block.  (In the 2nd version, both declared implicitly inside the block)
 
