@@ -565,7 +565,7 @@ namespace Algo
 		} else {
 			// Wir sind also nicht fertig geworden, keine Pause angefragt -> das heisst das
 			// Backtracking hat einen Seitensprung gemacht.
-			if ( pageOrder.isEmpty() )
+			if ( pageOrder.isEmpty() || p_id >= pageOrder.count() )
 				emit final_solution( iteration, cnt_sel, cnt_unsel, avail.isEmpty() );
 			else emit redo();
 		}

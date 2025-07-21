@@ -1,7 +1,16 @@
 Chunk Distribution Visualizer -
 description of algorithms and algorithm development
 ===================================================
----
+<!--TOC-->
+  - [1. Disambiguation](#1.-disambiguation)
+  - [2. very first approach: the basic algorithm](#2.-very-first-approach-the-basic-algorithm)
+    - [Variables:](#variables)
+    - [Initial state:](#initial-state)
+    - [Flow Diagrams:](#flow-diagrams)
+      - [main iteration loop:](#main-iteration-loop)
+      - [sub functions:](#sub-functions)
+  - [3. First abstraction - free page sizes](#3.-first-abstraction-free-page-sizes)
+<!--/TOC-->---
 ## 1. Disambiguation
 
 | word | description |
@@ -95,15 +104,107 @@ flowchart
 ```mermaid
 flowchart
 	subgraph "sort chunk into _available_"
-        scstart((("given: chunk<br/>/ chunk ID")))-->
-		sc0["_a_id_ = 0"]-->
-		sc1{"_a_id_ < _available.count_"}-->
-        |yes|sc2{"chunk.bytes < _available[a_id].bytes_"}-->
-        |yes|scl["increment _a_id_"]-->sc1
-        sc2-->|no|sc3{"chunk.bytes > _available[a_id].bytes_"}-->
-        |no|sc4{"chunk.prio < available[a_id].prio<br/>OR<br/>chunk.number > available[a_id].number"}-->|yes|scl
-        sc3-->|yes|sci0["insert chunk_id into _available_ @ _a_id_"]-->
-        sci1["increment _a_id_"]-->
-        scend(["done"])
+        scstart((("given: chunk<br/>/ chunk ID<br/>_a_id_ = 0")))--->
+		sc1{"_a_id_ < _available.count_"}--->
+        |yes|sc2{"chunk.bytes < _available[a_id].bytes_"}--->
+        |yes|sc3["increment _a_id_"]--->sc1
+
+        sc2-->|no|sc4{"chunk.bytes > _available[a_id].bytes_"}--->
+        |no|sc5{"chunk.prio < _available[a_id].prio_<br/>OR<br/>chunk.number > _available[a_id].number_"}--->
+        |yes|sc3
+
+        sc4--->|yes|sci0["insert chunk_id into _available_ @ _a_id_"]--->
+        sci1["increment _a_id_"]--->scend(["done"])
+
+        sc1--->|yes|sci0
+
+        sci0 <---|no|sc5
 	end
+```
+---
+## 3. First abstraction - free page sizes
+The first iteration is about removing the binding to music packing.  I.e. the fixed bound that only
+the first pages has less that 256 bytes free needs to be removed.
+
+Also this introduces the possibility that the smallest page(s) leave(s) too little space to be
+filled with chunks.  This was nearly impossible with music data, as the instrument tables had a max
+length of 32 by design, speed-tables and init-data were even shorter, and I created no player that
+left less than $50 bytes in its last page.
+
+Thus the initial situation changes:
+- there need to be more than one list of pages
+  - `pages`: a list or map of all pages configured
+    - `page_id`: index into this list
+  - `available_pages`: a list of page_ids, sorted by free space ascending
+  - `impossible_pages`: initially empty, will contain page_ids of pages that cannot be filled with
+the available chunks
+
+And we also get a new final state: `ALL_PAGES_FILLED`.  This is the "finish"-case, where there is
+more data (i.e. chunks) available, than can be placed successfully inside the available pages.
+
+Question arises, what to do in that case:
+- As chunks must be left over, it could continue behind
+the highest pages to distribute chunks as if those pages were marked "256 bytes free", just like
+the music packer did.
+- On the other hand the work has succeeded, the gaps are as filled as possible.
+
+### 3.1. changed flow charts
+To accommodate for the second "success"-option, in which all fillable given pages are filled, 
+`switch to next page` needs an update so it can return the two states:
+```mermaid
+flowchart
+	subgraph "switch to next page"
+        sn1(((Start)))-->
+        sn2["increment _p_id_<br/>reset _a_id_ (=0)"]-->
+        snc{"_p_id_<br/> < <br/>_available_pages_.count"};
+        snc-->|yes|sn4["init _bytes_left_ from page"]-->
+        snend(["page switch<br/>complete"])
+        snc-->|no|sn3(["ALL_PAGES_FILLED"])
+	end
+```
+---
+Backtracking needs to take care of sorting out pages we simply cannot fill. And obviously, the
+function now returns an indicator if a page change occurred during backtracking:
+```mermaid
+flowchart
+	subgraph "do backtrack"
+        bt0([start backtracking])-->
+        btc3{"current page is empty<br/>i.e. no chunks selected"}-->
+        |yes|btc2{"_p_id_ > 0"}-->
+        |yes|bt3["decrement _p_id_<br/>(switch to previous available page)"]-->
+        btpp2["update _bytes_left_ from new current page<br/>(_available_pages_[ _p_id_ ])"]-->
+        btdc(["backtracking ok<br/>page changed"])
+
+        btc2-->
+        |no|btrp["take page_id from _available_pages_[_p_id_]<br/><br/>append page_id to _impossible_pages_"]-->
+        btpp2
+
+        btc3-->
+        bt1["take last Chunk from current page"]-->bt11["update _bytes_left_ of current page"]-->
+        bt2[["sort taken chunk into _available_"]]-->
+        btdone(["backtracking ok<br/>no page change"])
+	end
+```
+The main iteration changes as follows:
+```mermaid
+flowchart
+    start(((Start)))--->
+	|_a_id_ and _p_id_ are current|a0["increment _iteration_count_"]--->
+    c0{"_a_id_ < _available.count_<br/>AND<br/>_bytes_left_ > 0"}
+    c0--->|yes|c1{"does current<br/>chunk fit into<br/>current page?"}
+    c1--->|yes|tac[["take available chunk"]]
+    c1--->|no|n1["increment _a_id_<br/>(i.e. point to next maybe<br/>smaller available chunk)"]
+    c2--->|yes|c3{"_p_id_ < _available_pages.count_ ?"}
+	z((("SOLVED!")))
+
+    tac--->c2{"did page change?"}--->|no|j1(( ))--->c0
+    n1--->j1
+    c3--->|yes|j2(( ))--->start
+    c3--->|no|z
+
+    c0--->|no|c4{"is _available_ empty?"}--->|yes|z
+    c4--->|no|bt[["do_backtrack"]]--->btc{"did current page change?"}
+    btc--->|no|j1
+    btc--->|yes|c5{"is _available_pages_ empty?"}--->|yes|z
+    c5--->|no|j2
 ```
