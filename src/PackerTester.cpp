@@ -426,6 +426,8 @@ void PackerTester::abschluss( QString ButtonText, QString MSG_Tx )
 	if ( boosted ) rebuild_results();
 	aktualisiere_anzeige();
 	tabs_einschalten();
+	QSignalBlocker b( cb_tune );
+	cb_tune->setCurrentIndex( -1 );
 }
 
 void PackerTester::timerEvent( QTimerEvent *event )
