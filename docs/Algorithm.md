@@ -2,6 +2,7 @@ Chunk Distribution Visualizer -
 description of algorithms and algorithm development
 ===================================================
 <!--TOC-->
+  - [1. disambiguation](#1.-disambiguation)
   - [2. very first approach: the basic algorithm](#2.-very-first-approach-the-basic-algorithm)
     - [Variables:](#variables)
     - [Initial state:](#initial-state)
@@ -12,6 +13,8 @@ description of algorithms and algorithm development
     - [3.1. changed flow charts](#3.1.-changed-flow-charts)
   - [3.2. verbal description](#3.2.-verbal-description)
 <!--/TOC-->
+## 1. disambiguation
+
 | word | description |
 | :---: | :--- |
 | chunk | A block of data or code bytes.  For the part of finding the right place in memory, it's contents does not matter at all.  Our main interest is: its size in bytes.|
