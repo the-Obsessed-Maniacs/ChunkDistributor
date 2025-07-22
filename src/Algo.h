@@ -266,6 +266,7 @@ namespace Algo
 		AlgoCom	   &com;
 		Algo::State current_state;
 		quint64		cnt_sel{ 0 }, cnt_unsel{ 0 }, iteration{ 0 }, lastIt{ 0 };
+		int			cur_btsleft_thresh{ 0 };
 	};
 
 	class AlgoEngine : public AlgoRunner

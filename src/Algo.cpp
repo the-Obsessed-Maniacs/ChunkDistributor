@@ -468,7 +468,7 @@ namespace Algo
 		++cnt_sel;
 		auto id = avail.takeAt( a_id );
 		com.result[ pageOrder[ p_id ] ].solution.append( id );
-		if ( ( com.result[ pageOrder[ p_id ] ].bytes_left -= bytes( id ) ) == 0 )
+		if ( ( com.result[ pageOrder[ p_id ] ].bytes_left -= bytes( id ) ) <= cur_btsleft_thresh )
 		{
 			// Page finished - jetzt haben wir eine neue best solution
 			QWriteLocker lck( &com.lock );
@@ -547,7 +547,8 @@ namespace Algo
 		if ( avail.isEmpty() ) return emit final_solution( iteration, cnt_sel, cnt_unsel, 1.0 );
 		++iteration;
 		do { // Außen: Backtracking, Innen: Number Selecting
-			while ( a_id < avail.count() && com.result[ pageOrder[ p_id ] ].bytes_left )
+			while ( a_id < avail.count()
+					&& com.result[ pageOrder[ p_id ] ].bytes_left > cur_btsleft_thresh )
 				if ( com.result[ pageOrder[ p_id ] ].bytes_left >= chunks[ avail[ a_id ] ] )
 				{
 					if ( take_available() ) // Die eigentliche Schleife an sich
