@@ -42,7 +42,7 @@ Were kind of refactored out them.  I wanted to show off without any need, so I e
 Designer Plugin for the Algo Widget.  This may be usefull for some preconfiguration if somebody
 derives an own algorithm.
 
-| ::info:: | I was planning a full refactoring of the application, but I am not quite convinced, yet, if that'd be a waste of time. This super-option of simply using the Qt Designer, adding a `Algo::Algo`-Widget and run preview seems really cool and a time-saver.|
+| ℹ️ | I was planning a full refactoring of the application, but I am not quite convinced, yet, if that'd be a waste of time. This super-option of simply using the Qt Designer, adding a `Algo::Algo`-Widget and run preview seems really cool and a time-saver.|
 |--|:--|
 
 ### AlgoData.h
