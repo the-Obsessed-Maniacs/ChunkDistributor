@@ -29,7 +29,7 @@ their own ideas without much effort.
 - PackerTester.h/cpp contains the whole UI, as well as the ATMDS3-Implementation (that's why it
 runs much slower even in `silent` mode - first try without multithreading.)
 - Stage.h/cpp contains some QGraphicsWidgets that are used for visualization
-- AnimatePosition.h/cpp contains a CRTP-snapin for animated QGraphicsObject movement.
+- AnimatePosition.h/cpp contains a CRTP-mix-in for animated QGraphicsObject movement.
 
 All those code files rather belong to the first implementation (at least that is what makes them
 a little crowded), and to application / UI control.
@@ -49,13 +49,13 @@ derives an own algorithm.
 ... describes data structures:
 - `AlgoPage`, which is the base to record the description about a page and at the same time keep
 one record to work on and one to present a solution at the same time.
-- `ResultCache` - declared as using a `QMap< quin16, AlgoPage>`
+- `ResultCache` - declared as using a `QMap< quint16, AlgoPage>` (where the key is the start_address)
 - `AlgoCom` - a communication structure for multithreaded working, contains:
   - a ResultCache
   - a mutable ReadWriteLock
   - and a boolean to signalize fresh data
 
-It should be noted that access patterns to this communication structure have to be strictly obeyed.
+It should be noted that access patterns to this communication structure ***have to be strictly obeyed!***
 In clean words this means the ReadWriteLock shall be used:
 - to protect access to the `.solution`-part of each result cache entry
 - if it is important to "atomically" check for new data, when reading `freshData`
@@ -75,7 +75,7 @@ safely copied to the solution.  `freshData` is set to true and the lock released
 
 ### AlgoGfx.h/cpp
 Implements the QGraphicsObjects/Widgets needed to display solutions visually.  It also contains
-the declaration of the CRTP-Snapin I use for animating the movement of QGraphicsObjects.
+the declaration of the CRTP-mix-in I wrote for animating the movement of QGraphicsObjects.
 
 You may want to change stuff there, make it look nicer, whatever - I'd be glad in appreciation.  But for
 mathematical purposes it doesn't matter, it's the boilerplate I made so we can *look* at how
@@ -131,7 +131,7 @@ So, `Algo` declares `Algo::State` as a 64bit enum containing the "real" state bi
 - `init_bit`
 
 Where `pause_bit` is the only one with kind of a double representation.  If the `running_bit` is
-set, a set `pause_bit` signalized that pausing the calculation was requested.
+set, a set `pause_bit` signalizes that pausing the calculation was requested.
 
 As soon as the worker wants to respond, it simply resets the `running_bit` and returns to its event
 loop.  Then only the `pause_bit` stays set, which actually does mean "the algorithm is paused."
@@ -190,7 +190,7 @@ This is the deselection operation - or a single backtracking step, if you want t
 The last current selection item is removed an reinserted into the `avail`-list.
 
 `make_available()` also returns true upon a page change.  In that case it'd be a page backtracking
-process, which will be handled as described in [Algorithm](/Algorithm.md)
+process, which will be handled as described in [Algorithm](/docs/Algorithm.md)
 
 ###### `QPair< quint16, quint16 > read_page_info( const QString tx ) const`
 Short helper function for reading the page description strings (remember: "$addr+size" is allowed,
@@ -315,4 +315,7 @@ seamlessly.  Steps that will follow (if I can make it work with Qt, that is):
 - integrate a self-registering factory into Algo
 
 That way in the future it will be sufficient, to simply derive off AlgoRunner with a specific
-method and after compiling, it simply is there, listed inside that combo box.
+method and after compiling, it simply is there, listed inside that combo box.  That way after
+compiling and creating a Designer DLL (CMake target "DesignerPlugin"), the whole would be even
+runnable from within Qt Designer using the "preview" functionality, so not even an application
+around would be neccessary.  Future music, gotto go implement it :smile:
