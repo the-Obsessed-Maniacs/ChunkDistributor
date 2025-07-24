@@ -233,9 +233,9 @@ namespace Algo
 		// den entsprechenden Chunks schon ihren Versatz innerhalb der Page berechnen.
 		for ( const auto &[ pid, p ] : res.asKeyValueRange() )
 		{
-			auto gbs  = !p.bestSolution.isEmpty();
-			auto out  = !gbs && p.solution.count() == 1 && p.solution.first() == -1;
-			auto done = gbs && p.bestSolution == p.solution;
+			auto gbs  = !p.solution.isEmpty();
+			auto out  = !gbs && p.selection.count() == 1 && p.selection.first() == -1;
+			auto done = gbs && p.solution == p.selection;
 			auto tx	  = gbs	  ? u""_s
 						: out ? u"not considered anymore - paged out..."_s
 							  : u"... waiting ..."_s;
@@ -244,7 +244,7 @@ namespace Algo
 			{
 				auto first = true;
 				auto px	   = bsf() * ( p.start_address & 0xff ) + hm;
-				for ( auto cid : p.bestSolution )
+				for ( auto cid : p.solution )
 				{
 					auto cb = _chunks[ cid ]->bytes();
 					tx += u"%3Chunk #%1 ($%2)"_s.arg( cid ).arg( cb ).arg( first ? first = false,
@@ -270,7 +270,7 @@ namespace Algo
 		for ( const auto &[ pid, p ] : res.asKeyValueRange() )
 		{
 			auto p0 = _page_pos[ pid ];
-			for ( const auto &cid : p.bestSolution )
+			for ( const auto &cid : p.solution )
 			{
 				_chunk_pos[ cid ] += QVector4D{ p0 }; // Verschiebung in Page + Verschiebung Page
 				_chunks[ cid ]->to( _chunk_pos[ cid ].toVector3D(), animated, { -256.f, 0.f },

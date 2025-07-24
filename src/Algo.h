@@ -274,8 +274,10 @@ namespace Algo
 		Q_OBJECT
 
 	  public:
-		explicit AlgoEngine( AlgoCom & );
-		~AlgoEngine() = default;
+		explicit AlgoEngine( AlgoCom &com )
+			: AlgoRunner( com )
+		{}
+		virtual ~AlgoEngine() = default;
 
 	  public slots:
 		void iterate() override;

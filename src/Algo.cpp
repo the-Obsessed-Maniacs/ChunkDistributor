@@ -525,15 +525,12 @@ namespace Algo
 
 	quint16 AlgoRunner::read_maybehex( const QString tx ) const
 	{
-		int hex = tx.startsWith( u'$' ) ? 1 : tx.startsWith( u"0x", Qt::CaseInsensitive ) ? 2 : 0;
-		if ( hex ) return tx.mid( hex, -1 ).toUInt( nullptr, 16 );
-		else return tx.toUInt();
+		auto tt	 = tx.trimmed();
+		int	 hex = tt.startsWith( u'$' ) ? 1 : tt.startsWith( u"0x", Qt::CaseInsensitive ) ? 2 : 0;
+		if ( hex ) return tt.mid( hex, -1 ).toUInt( nullptr, 16 );
+		else return tt.toUInt();
 	}
 
-
-	AlgoEngine::AlgoEngine( AlgoCom &com )
-		: AlgoRunner( com )
-	{}
 
 	// Was soll diese iterate() - Variante genau machen?
 	//
@@ -544,14 +541,13 @@ namespace Algo
 	//
 	void AlgoEngine::iterate()
 	{
-		if ( avail.isEmpty() ) return emit final_solution( iteration, cnt_sel, cnt_unsel, 1.0 );
 		++iteration;
 		do { // Außen: Backtracking, Innen: Number Selecting
 			while ( a_id < avail.count()
 					&& com.result[ pageOrder[ p_id ] ].bytes_left > cur_btsleft_thresh )
 				if ( com.result[ pageOrder[ p_id ] ].bytes_left >= chunks[ avail[ a_id ] ] )
 				{
-					if ( take_available() ) // Die eigentliche Schleife an sich
+					if ( take_available() )
 						if ( p_id < pageOrder.count() )
 							return emit redo(); // Nächste Page -> neue Iteration!
 						else return iterate_complete();
@@ -559,10 +555,9 @@ namespace Algo
 		} while ( !avail.isEmpty() && !make_available() );
 
 		if ( avail.isEmpty() )
-		{ // Letzte Lösung ausgeben, dann die Operation als fertig deklarieren (passiert am
-		  // Funktionswiedereintritt durch die avail.isEmpty-Prüfung).
+		{
 			emit page_finished();
-			emit redo();
+			emit final_solution( iteration, cnt_sel, cnt_unsel, 1.0 );
 		} else {
 			// Wir sind also nicht fertig geworden, keine Pause angefragt -> das heisst das
 			// Backtracking hat einen Seitensprung gemacht.
