@@ -11,8 +11,8 @@ runs much slower even in `silent` mode - first try without multithreading.)
 - Stage.h/cpp contains some QGraphicsWidgets that are used for visualization
 - AnimatePosition.h/cpp contains a CRTP-snapin for animated QGraphicsObject movement.
 
-All those code files rather belong to the first implementation, so this description simply serves
-for completeness sake.
+All those code files rather belong to the first implementation (at least that is what makes them
+a little crowded), and to application / UI control.
 
 - AlgoData.h
 - Algo.h/cpp
@@ -33,8 +33,8 @@ one record to work on and one to present a solution at the same time.
   - and a boolean to signalize fresh data
 
 It should be noted that access patterns to this communication structure have to be strictly obeyed.
-In clean words this means the ReadWriteLock shall be used to:
-- protect access to the `.solution`-part of each result cache entry
+In clean words this means the ReadWriteLock shall be used:
+- to protect access to the `.solution`-part of each result cache entry
 - if it is important to "atomically" check for new data, when reading `freshData`
 - when writing `freshData`
 
@@ -54,14 +54,14 @@ safely copied to the solution.  `freshData` is set to true and the lock released
 Implements the QGraphicsObjects/Widgets needed to display solutions visually.  It also contains
 the declaration of the CRTP-Snapin I use for animating the movement of QGraphicsObjects.
 
-You may want to change stuff there, make it look nicer, whatever - I'd be glad.  But for
-mathematical purposes it doesn't matter, it's the boilerplate I made so we can look at how
-different implementations act.
+You may want to change stuff there, make it look nicer, whatever - I'd be glad in appreciation.  But for
+mathematical purposes it doesn't matter, it's the boilerplate I made so we can *look* at how
+different implementations *act*.
 
 ## Algo.h/cpp
 Here's where the hot stuff happens ;)
 
-In Algo.h you will see first the Algo-Widget being declared, providing the description, the group
+First, the Algo-Widget is declared, providing the description, the group
 boxes for simulation and generation, the animation group box and the QGraphicsView for visualization.
 All Ui is internally interconnected to corresponding slots, so the widget already does its visual
 housekeeping by itself.
