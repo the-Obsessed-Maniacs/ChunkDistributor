@@ -1,5 +1,5 @@
 # Chunk Distribution Visualizer - UI explanations
-All in all I belive the user interface is kind of self-explaining.  Anyhow, the creator of a thing
+All in all I believe the user interface is kind of self-explaining.  Anyhow, the creator of a thing
 always thinks that, but mostly it isn't true.
 
 The tool starts up like this, in the [`Page Filler Algorithmus` mode](#Mode-Page-Filler-Algorithm)

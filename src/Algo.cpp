@@ -467,12 +467,12 @@ namespace Algo
 		assert( a_id < avail.count() && p_id < pageOrder.count() );
 		++cnt_sel;
 		auto id = avail.takeAt( a_id );
-		com.result[ pageOrder[ p_id ] ].solution.append( id );
+		com.result[ pageOrder[ p_id ] ].selection.append( id );
 		if ( ( com.result[ pageOrder[ p_id ] ].bytes_left -= bytes( id ) ) <= cur_btsleft_thresh )
 		{
 			// Page finished - jetzt haben wir eine neue best solution
 			QWriteLocker lck( &com.lock );
-			com.result[ pageOrder[ p_id ] ].bestSolution = com.result[ pageOrder[ p_id ] ].solution;
+			com.result[ pageOrder[ p_id ] ].solution = com.result[ pageOrder[ p_id ] ].selection;
 			if ( !com.freshData )
 			{
 				com.freshData = true;
@@ -488,7 +488,7 @@ namespace Algo
 	{
 		assert( p_id < pageOrder.count() );
 		++cnt_unsel;
-		if ( com.result[ pageOrder[ p_id ] ].solution.isEmpty() )
+		if ( com.result[ pageOrder[ p_id ] ].selection.isEmpty() )
 		{
 			// page backtracking needs to happen:
 			// -> p_id == 0 -> smallest page? Cannot decrement -> becomes bad, cannot fill it.
@@ -496,11 +496,11 @@ namespace Algo
 			//  -> both should also send a signal, as the current page changes, thus a page_solution
 			//  has changed for now.
 			QWriteLocker lck( &com.lock );
-			com.result[ pageOrder[ p_id ] ].bestSolution.clear();
+			com.result[ pageOrder[ p_id ] ].solution.clear();
 			if ( p_id > 0 ) --p_id; // go backtrack the previous page ...
 			else
 			{ // mark page as not considered anymore
-				com.result[ pageOrder[ p_id ] ].solution.append( -1 );
+				com.result[ pageOrder[ p_id ] ].selection.append( -1 );
 				badPages.append( pageOrder.takeFirst() ), a_id = 0; // ... start again ...
 			}
 			if ( !com.freshData )
@@ -510,7 +510,7 @@ namespace Algo
 			}
 			return true; // return true to signal end of inner loop, as a page jump happened
 		}
-		auto c_id = com.result[ pageOrder[ p_id ] ].solution.takeLast();
+		auto c_id = com.result[ pageOrder[ p_id ] ].selection.takeLast();
 		com.result[ pageOrder[ p_id ] ].bytes_left += bytes( c_id );
 		sort_into_avail( c_id );
 		return false;
@@ -589,7 +589,7 @@ namespace Algo
 		// Allerdings gäbe es noch andere Kriterien: Wieviele Chunks sind gefüllt?
 		left = all = 0;
 		for ( auto p : com.result ) // nicht befüllbare Pages nicht zählen!
-			if ( !( p.solution.count() == 1 && p.solution.first() == -1 ) )
+			if ( !( p.selection.count() == 1 && p.selection.first() == -1 ) )
 			{
 				left += p.bytes_left;
 				all += p.end_address - p.start_address;
