@@ -1,4 +1,3 @@
-
 #include "AlgoGfx.h"
 
 #include <QFontMetricsF>
@@ -199,18 +198,27 @@ namespace Algo
 		// "Nachproduktionsmöglichkeit" geben...
 		for ( const auto &[ addr, enda_size ] : pages.asKeyValueRange() )
 			addNewPage( addr, enda_size, false );
+		initBuildChunks( chunks );
+	}
 
-		auto cnt = chunks.count();
-		_chunks.resizeForOverwrite( cnt ), _chunk_pos.resize( cnt, { 0.f, 0.f, 0.f, -1.f } );
-		for ( uint c_id = 0; c_id < cnt; c_id++ )
-			_chunks[ c_id ] =
-				new Chunk( this, chunks[ c_id ] & 0xffffu, c_id, chunks[ c_id ] >> 16 );
-
-		updateMyGeometry();
-
-		qDebug() << "AlgoGfx::CTor(" << this << ") done - got:" << _chunks.count()
-				 << "chunks (positions:" << _chunk_pos.count() << "), and" << _pages.count()
-				 << "pages (positions:" << _page_pos.count() << ")";
+	AlgoGfx::AlgoGfx( const QSize &currentViewSize, const QList< quint32 > &chunks,
+					  const QList< quint64 > &pages )
+		: QGraphicsWidget( nullptr )
+		, _cols( 1 )
+		, _sbs( true )
+	{
+		setSizePolicy( QSizePolicy::Preferred, QSizePolicy::Preferred, QSizePolicy::Frame );
+		hm				 = style()->pixelMetric( QStyle::PM_LayoutLeftMargin );
+		hs				 = style()->pixelMetric( QStyle::PM_LayoutHorizontalSpacing );
+		vm				 = style()->pixelMetric( QStyle::PM_LayoutBottomMargin );
+		vs				 = style()->pixelMetric( QStyle::PM_LayoutVerticalSpacing );
+		fh				 = QFontMetrics( font() ).height();
+		auto s			 = currentViewSize.toSizeF();
+		_sizeRatioTarget = s.width() / s.height();
+		// Initialkonfiguration der Elemente erstellen.  Zumindest für Pages sollte es noch eine Art
+		// "Nachproduktionsmöglichkeit" geben...
+		for ( const auto p : pages ) addNewPage( p & 0xffff, ( p >> 16 ) & 0xffff, false );
+		initBuildChunks( chunks );
 	}
 
 	Page *AlgoGfx::addNewPage( uint address, uint enda_size, bool single_call )
@@ -278,6 +286,68 @@ namespace Algo
 			}
 		}
 		// Puh, das sollte es gewesen sein ...
+	}
+
+	// Hier müssen die Vorgänge oben separiert werden.  Grundlage ist: zum Abschluss wird
+	// "commitPages()" aufgerufen.  Das heisst, ich gehe immer von "sauberen" Daten aus, in
+	// denen aber schon andere Pages verarbeitet sein könnten.
+	void AlgoGfx::changePage( const AlgoPage &pg )
+	{
+		// Unterschiede zur obigen Implementation:
+		// ->   selektives Zurücksetzen der Zugehörigkeiten (dauert vmtl. länger) für die jew. Page
+		for ( int i = 0; i < _chunks.count(); ++i )
+			if ( ( static_cast< int >( _chunk_pos[ i ].w() ) == pg._.start_addr )
+				 && !pg.solution.contains( i ) )
+				_chunk_pos[ i ].setW( -1.f ), _moved_chunks.insert( i );
+		// Page mit neuen Daten füttern, placement passiert ebenso später
+		auto gbs  = !pg.solution.isEmpty();
+		auto out  = !gbs && pg.selection.count() == 1 && pg.selection.first() == -1;
+		auto done = gbs && pg.solution == pg.selection;
+		auto tx	  = gbs	  ? u""_s
+					: out ? u"not considered anymore - paged out..."_s
+						  : u"... waiting ..."_s;
+		auto bts  = 0;
+		if ( gbs )
+		{
+			auto first = true;
+			auto px	   = bsf() * ( pg._.start_addr & 0xff ) + hm;
+			for ( auto cid : pg.solution )
+			{
+				auto cb = _chunks[ cid ]->bytes();
+				tx += u"%3Chunk #%1 ($%2)"_s.arg( cid ).arg( cb ).arg( first	   ? first = false,
+																	   "... got: " : " + " );
+				bts += cb;
+				QVector4D np{ px, float( vm + fh + vs ), 0.f, float( pg._.start_addr ) };
+				if ( !qFuzzyCompare( np, _chunk_pos[ cid ] ) )
+					_chunk_pos[ cid ] = np, _moved_chunks.insert( cid );
+				px += bsf() * cb;
+			}
+		}
+		_pages[ pg._.start_addr ]->setCurrentResult( tx, bts,
+													 out	? Page::deactivated
+													 : done ? Page::finished
+															: Page::none );
+	}
+
+	void AlgoGfx::commitPages( bool animated )
+	{
+		updateMyGeometry();
+		// Zuerst die Pages zurecht rücken, damit die Positionen der verteilten Chunks einfacher
+		// berechnet werden können
+		layoutPages( animated );
+		layoutBulk( animated );
+		// Schlussendlich sollten den Chunks ihre Zielposition zugewiesen werden - also nicht nur
+		// tabellarisch festgehalten ...
+		for ( auto id : _moved_chunks )
+		{
+			auto pid  = static_cast< int >( _chunk_pos[ id ].w() );
+			auto poff = pid >= 0 ? QVector4D{ _page_pos[ pid ] } : QVector4D{};
+
+			_chunk_pos[ id ] += poff; // Verschiebung in Page + Verschiebung Page
+			_chunks[ id ]->to( _chunk_pos[ id ].toVector3D(), animated, { -256.f, 0.f },
+							   { 0.f, -128.f } );
+		}
+		_moved_chunks.clear();
 	}
 
 	void AlgoGfx::updateMyGeometry()
@@ -378,6 +448,21 @@ namespace Algo
 			case QEvent::Resize: emit resized(); break;
 		}
 		return QGraphicsWidget::sceneEvent( e );
+	}
+
+	void AlgoGfx::initBuildChunks( const QList< quint32 > &chunks )
+	{
+		auto cnt = chunks.count();
+		_chunks.resizeForOverwrite( cnt ), _chunk_pos.resize( cnt, { 0.f, 0.f, 0.f, -1.f } );
+		for ( uint c_id = 0; c_id < cnt; c_id++ )
+			_chunks[ c_id ] =
+				new Chunk( this, chunks[ c_id ] & 0xffffu, c_id, chunks[ c_id ] >> 16 );
+
+		updateMyGeometry();
+
+		qDebug() << "AlgoGfx::CTor(" << this << ") done - got:" << _chunks.count()
+				 << "chunks (positions:" << _chunk_pos.count() << "), and" << _pages.count()
+				 << "pages (positions:" << _page_pos.count() << ")";
 	}
 
 	qreal AlgoGfx::freeChunkOtherSize( qreal width )

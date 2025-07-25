@@ -50,7 +50,7 @@
 #include <QVariantAnimation>
 #include <type_traits>
 
-#pragma region CRTP-snap-in_PositionAni_Mated
+#pragma region CRTP-mixin_PositionAni_Mated
 namespace PositionAni
 {
 	// Hermite-Basis-Matrix
@@ -223,6 +223,7 @@ namespace Algo
 {
 	constexpr auto bytePixels  = 4;
 	constexpr auto bytePixelsF = double( 4 );
+	struct AlgoPage;
 
 	class Chunk
 		: public QGraphicsObject
@@ -288,10 +289,14 @@ namespace Algo
 
 		explicit AlgoGfx( const QSize& currentViewSize, const QList< quint32 >& chunks,
 						  const QMap< quint16, quint32 >& pages );
+		explicit AlgoGfx( const QSize& currentViewSize, const QList< quint32 >& chunks,
+						  const QList< quint64 >& pages );
 		virtual ~AlgoGfx() = default;
 
 		Page* addNewPage( uint address, uint enda_size, bool single_call = true );
 		void  updateState( const ResultCache& res, bool animated = false );
+		void  changePage( const AlgoPage& pg );
+		void  commitPages( bool animated = false );
 
 		void  updateMyGeometry();
 
@@ -305,6 +310,7 @@ namespace Algo
 	  protected:
 		bool				sceneEvent( QEvent* event ) override;
 
+		void				initBuildChunks( const QList< quint32 >& chunks );
 		qreal				freeChunkOtherSize( qreal width );
 		void				layoutBulk( bool animated = false );
 		void				layoutPages( bool animated = false );
@@ -315,15 +321,16 @@ namespace Algo
 									// aktuelle Positionen und Rotationen (bei den Chunks - will mir
 		QList< QVector4D >	_chunk_pos; // diese Möglichkeit offen lassen, dass die Chunks im
 		QMap< uint, QPointF >
-				_page_pos; // "Vorrat" vielleicht senkrecht aufgereiht werden könnten ...)
+					_page_pos; // "Vorrat" vielleicht senkrecht aufgereiht werden könnten ...)
+		QSet< int > _moved_chunks;
 
 		// Layout-Hilfsmittel
-		QRectF	_rect; // Aktuell berechnetes Rect
-		QPointF _pageOffset;
-		QPointF _bulkOffset;
-		qreal	_sizeRatioTarget; // Ziel-Aspect-Ratio (nämlich die Aktuelle des Views)
-		int		_cols;
-		bool	_sbs;
+		QRectF		_rect; // Aktuell berechnetes Rect
+		QPointF		_pageOffset;
+		QPointF		_bulkOffset;
+		qreal		_sizeRatioTarget; // Ziel-Aspect-Ratio (nämlich die Aktuelle des Views)
+		int			_cols;
+		bool		_sbs;
 	};
 
 	class AlgoLa : public QGraphicsLayout
