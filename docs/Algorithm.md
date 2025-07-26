@@ -18,7 +18,7 @@ description of algorithms and algorithm development
 | word | description |
 | :---: | :--- |
 | chunk | A block of data or code bytes.  For the part of finding the right place in memory, it's contents does not matter at all.  Our main interest is: its size in bytes.|
-| page | A memory range to fill with chunks.  The name comes from the way 8bit processors looked at their memory, sliced into pages of 256 bytes.<br>A page has two important parameters:<br><li/> where does the free space start,<br><li/> and how many bytes are free?
+| page | A memory range to fill with chunks. The name comes from the way 8bit processors looked at their memory, sliced into pages of 256 bytes.<br>A page has two important parameters:<br><ul><li/> where does the free space start,<br><li/> and how many bytes are free?</ul>|
 
 ---
 ## 2. very first approach: the basic algorithm

@@ -2,13 +2,9 @@
 
 using namespace Qt::StringLiterals;
 
-const QString AlgoRunner0::name_in_factory = u"basic implementation with dead pages."_s;
+const auto AlgoRunner0::name_in_factory = u"basic implementation with dead pages."_s;
 
-AlgoRunner0::AlgoRunner0()
-	: Registrar()
-{}
-
-void AlgoRunner0::iterate()
+void	   AlgoRunner0::iterate()
 {
 	++iteration;
 	do { // Außen: Backtracking, Innen: Number Selecting

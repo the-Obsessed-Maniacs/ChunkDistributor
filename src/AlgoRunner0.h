@@ -4,14 +4,12 @@
 
 using namespace Algo;
 
-class AlgoRunner0 : public AlgoWorker::Registrar< AlgoRunner0 >
+class AlgoRunner0 : public Factory< WorkerBase >::Registrar< AlgoRunner0 >
 {
 	Q_OBJECT
 
   public:
 	static const QString name_in_factory;
-	AlgoRunner0();
-	virtual ~AlgoRunner0() = default;
 
   public slots:
 	void iterate() override;

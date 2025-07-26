@@ -8,21 +8,17 @@ their own ideas without much effort.
     - [AlgoData.h](#algodata.h)
     - [AlgoGfx.h/cpp](#algogfx.hcpp)
     - [Algo.h/cpp](#algo.hcpp)
-      - [AlgoRunner](#algorunner)
-        - [protected Variables](#protected-variables)
-        - [`current_state`](#current_state)
-        - [`cur_btsleft_thresh`](#cur_btsleft_thresh)
-        - [`AlgoRunner` function descriptions](#algorunner-function-descriptions)
-          - [`init()`](#init)
-          - [`sort_into_avail( int chunk_id )`](#sort_into_avail-int-chunk_id-)
-          - [`take_available()`](#take_available)
-          - [`make_available()`](#make_available)
-          - [`QPair< quint16, quint16 > read_page_info( const QString tx ) const`](#qpair-quint16-quint16-read_page_info-const-qstring-tx-const)
-          - [`quint16 read_maybehex( const QString tx ) const`](#quint16-read_maybehex-const-qstring-tx-const)
-          - [`int bytes( int chunk_id ) const`](#int-bytes-int-chunk_id-const)
-          - [`int prio( int chunk_id ) const`](#int-prio-int-chunk_id-const)
-  - [`AlgoRunner`'s event loop](#algorunners-event-loop)
-  - [deriving your `AlgoRunner`](#deriving-your-algorunner)
+  - [WorkerBase](#workerbase)
+    - [protected Variables](#protected-variables)
+      - [`current_state`](#current_state)
+      - [`cur_btsleft_thresh`](#cur_btsleft_thresh)
+    - [`WorkerBase` function descriptions](#workerbase-function-descriptions)
+      - [`init()`](#init)
+      - [`sort_into_avail( int chunk_id )`](#sort_into_avail-int-chunk_id-)
+      - [`take_available()`](#take_available)
+      - [`make_available()`](#make_available)
+    - [`WorkerBase`'s event loop](#workerbases-event-loop)
+  - [deriving your `WorkerBase`](#deriving-your-workerbase)
 <!--/TOC-->
 ## A short dive into the program
 - main.cpp is a simple Qt app starter
@@ -93,15 +89,19 @@ For collaborating you do not have to care much about UI.  It's about a new `work
 communication structure `AlgoCom`.  The Algo UI Widget owns such a structure to provide the scratch-
 and reporting space.
 
-#### AlgoRunner
-Algo.h also defines `AlgoRunner`.  This class is pure virtual, as the `iterate()` method has no
-base implementation.
+---
+## WorkerBase
+Algo.h also defines a factory and `WorkerBase`.  This class is pure virtual, as the `iterate()`
+method has no base implementation.
 
-This is the class you'd want to derive your algorithm implementation from.  And it really only needs
-that single function and a CTor - of course you are free to implement what you think is neccessary.
+To derive another `WorkerBase` you simply do as `AlgoRunner0.h/cpp` shows.  This is important,
+because I used a self-registering factory pattern
+([see Nir Friedman's Blog](https://www.nirfriedman.com/2018/04/29/unforgettable-factory/)).
 
-##### protected Variables
-All variables of `AlgoRunner` are declared protected, thus your derivate can use them just as if it
+But first, more info on the class and its capabilities (or jump directly to: [deriving your `Worker`](#deriving-your-`Worker`)):
+
+### protected Variables
+All variables of `WorkerBase` are declared protected, thus your derivate can use them just as if it
 were your own variables.
 
 | variable(s) | description |
@@ -117,14 +117,12 @@ were your own variables.
 | `iteration`, `lastIt` | 
 | `cur_btsleft_thresh` | how many bytes may be left before a page is considered as "filled"?<ul><li/>initially set to zero<li/>I added this lately, because I think this is the direction to go - more below.</ul>
   
-##### `current_state`
+#### `current_state`
 I've been thinking about a good way to report current progress and state at once to not overload
-Qt's Signal and Slot mechanism.  Well, as you can see from `lastIt`, it didn't even help to restrict
-the data flow.
+Qt's Signal and Slot mechanism.  Well, as you can see from `lastIt`, it didn't even help to
+restrict the data flow by sending only 64bit every time state is reported.
 
-Anyhow, I wanted to be able to report some state as well as some counters at once.
-
-So, `Algo` declares `Algo::State` as a 64bit enum containing the "real" state bits:
+So, the namespace declares `Algo::State` as a 64bit enum containing the "real" state bits:
 - `deeper_calc`
 - `running_bit`
 - `pause_bit`
@@ -136,7 +134,7 @@ set, a set `pause_bit` signalizes that pausing the calculation was requested.
 As soon as the worker wants to respond, it simply resets the `running_bit` and returns to its event
 loop.  Then only the `pause_bit` stays set, which actually does mean "the algorithm is paused."
 
-This pausing mechanism is built into `AlgoRunner` if your derrivate uses it as supposed (see below).
+This pausing mechanism is built into `WorkerBase` if your derrivate uses it as supposed (see below).
 
 Then, `Algo::State` declares bit masks and a shift count:
 - `page_mask`
@@ -147,20 +145,20 @@ Then, `Algo::State` declares bit masks and a shift count:
 And finally there are some const expressions for separating `currentPage` and `currentStep`,
 as well creating a state from bits and the current values.
 
-So all in all the `AlgoRunner` derrivate reports state as (bits, currentPage, currentStep).
+So all in all the `WorkerBase` derrivate reports state as (bits, currentPage, currentStep).
 
-##### `cur_btsleft_thresh`
+#### `cur_btsleft_thresh`
 If not all pages can be filled to the brim, most likely wasting a few bytes hurts less than having
 data cross page boundaries.  Thus at some point this threshold may be increased to have better
 chances to fill pages with the available chunks.
 
-***BTW:*** this is what the abort condition I am seeking should do... increase this threshold until
-a solution can be found, or it is triggered again to increase the threshold.
+***BTW*** this is what the abort condition I am seeking should do: increase this threshold until
+a solution can be found, or it is triggered again to increase the threshold another time.
 
 ---
-##### `AlgoRunner` function descriptions
-###### `init()`
-`AlgoRunner` not only declares the data, it also prepares it thru the init function.  There are 2
+### `WorkerBase` function descriptions
+#### `init()`
+`WorkerBase` not only declares the data, it also prepares it thru the init function.  There are 2
 virtual variations, because I already added a priority system to the chunks, which isn't used, yet,
 except in coloring the blocks visually and it is respected by `sort_into_avail( chunk_id )` (i.e.
 lowest prio-value comes first if two chunk sizes are equal).  For understanding: the highest prio
@@ -174,148 +172,130 @@ priority given plus one.  I.e. if you input { "0,1,2,3" }, those 4 chunks will h
 
 If you would like to do different house-keeping, just implement your own `init()`.
 
-###### `sort_into_avail( int chunk_id )`
+#### `sort_into_avail( int chunk_id )`
 Sorts a given chunk_id into the `avail` list, respecting priority and ID next to the primary sort
 criterium "size".
 
-###### `take_available()`
+#### `take_available()`
 Takes the current available chunk, as pointed to by `a_id`, out of `avail` and appends it to the
 current selection pointed to by `p_id` via `com.result[ pageOrder[ p_id ] ].selection`.  This is
 the "selection operation".
 
 `take_available()` returns true upon switching to the next page (i.e."Result ready!").
 
-###### `make_available()`
+#### `make_available()`
 This is the deselection operation - or a single backtracking step, if you want to put it that way.
 The last current selection item is removed an reinserted into the `avail`-list.
 
 `make_available()` also returns true upon a page change.  In that case it'd be a page backtracking
 process, which will be handled as described in [Algorithm](/docs/Algorithm.md)
 
-###### `QPair< quint16, quint16 > read_page_info( const QString tx ) const`
-Short helper function for reading the page description strings (remember: "$addr+size" is allowed,
-as well as "0xaddr" or even "0xaddr+$hexbytes").
+---
+### `WorkerBase`'s event loop
+This may be the most important explanation about how the WorkerBase works with its thread's event
+loop, although it should be fast-running data processing linear code.
 
-###### `quint16 read_maybehex( const QString tx ) const`
-Same kind of small helper - this is the one that tries to interpret a string as a number, taking
-the different Hex notations into account.
+I could have left out the Signals and Slots and only use sync primitives, but I did not think
+about that when implementing.  I just wrote a second thread with a communication object, just
+like I am used to in Qt.
 
-###### `int bytes( int chunk_id ) const`
-As I packed size and priority together, this is the split for size by id.
-
-###### `int prio( int chunk_id ) const`
-As I packed size and priority together, this is the split for priority by id.
-
-## `AlgoRunner`'s event loop
-This may be the most important explanation about how the AlgoRunner works with its thread's event
-loop, although it should be a fast-running data processing linear code.
-
-I could have left out the Signals and Slots and only use sync primitives (the existing lock would
-actually suffice, already, but maybe another atomic int would be helpful), but I did not think
-about that when implementing.  I just wrote a second thread with com object, just like I am used to
-in Qt.
-
-Anyhow.  ***The magic lies in the protected Signal `redo()`.*** It is connected internally upon
+<u>***The magic lies in the protected Signal `redo()`.***</u> It is connected internally upon
 creation and provides a way to "take an event loop-round".  Every time an iteration process is
 considered to be finished (and it is known, that another one will follow), `iterate()` should
 gracefully end in emitting `redo()`.
 
 This fires a queued signal and upon exiting `iterate()`, the thread event loop regains control.
-It will now process all pending events.  Most likely the last event will be the `redo()` signal
+It will now process all pending events.  Most likely the last event will be the `redo()` signal we
 just fired, which runs `pre_re_iterate()`.  This is the function doing all the checks and reporting
-the current state if it makes sense.  After these obligations, it calls `iterate()` again.
+the current state if it makes sense.  After these obligations, it directly calls `iterate()` again.
 
 So you see, by emitting `redo()` we make sure to process any events pending - which may be pause
 requests, or something under Qt's hood.
 
-## deriving your `AlgoRunner`
-The first implementation `AlgoEngine` may serve as an example.  This is the current implementation
+---
+## deriving your `Worker`
+The first implementation `AlgoRunner0` may serve as an example.  This is the current implementation
 used and it shows, how you really only need to implement `iterate()`:
 
 ```cpp
-	class AlgoEngine : public AlgoRunner
-	{
-		Q_OBJECT
+using namespace Algo;
 
-	  public:
-		explicit AlgoEngine( AlgoCom &com )
-			: AlgoRunner( com )
-		{}
-		virtual ~AlgoEngine() = default;
+class AlgoRunner0 : public Factory< WorkerBase >::Registrar< AlgoRunner0 >
+{
+	Q_OBJECT
 
-	  public slots:
-		void iterate() override;
+  public:
+	static const QString name_in_factory;
+	virtual ~AlgoRunner0() = default;
 
-	  protected:
-		void iterate_complete();
-	};
+  public slots:
+	void iterate() override;
+
+  protected:
+	void iterate_complete();
+};
 ```
+The class declaration line shows how to use the factory on one hand: do not derive from `WorkerBase`
+directly, because it itself inherits the factory template.  The inherited factory provides the
+templated `Registrar`, which itself is derived from `WorkerBase`, again.  This is indeed confusing,
+but when understood works perfectly fine.
+
+The factory mix-in expects a static class variable `name_in_factory` as a QString, which is used
+for registering.  This string is the identifier and description of your implementation at the same
+time, it will be shown as an item in the algorithm selection combo box.
+
 The protected `iterate_complete()` was added to keep the iterate function simple.  I kind of sourced
-out a codepath that is taken only once (as the name suggests, it's a finishing func ;)).
+out a codepath that is taken only once.  It tries to compute a "completed percentage" from chunks
+distributed vs. pages filled and emits the final report with these numbers.
 
-It tries to compute a "completed percentage" from chunks distributed vs. pages filled and emits the
-final report with these numbers.
-
-So, most likely you can simply copy & paste from the code block above and replace `AlgoEngine` with
+So, most likely you can simply copy & paste from the code block above and replace `AlgoRunner0` with
 your classname - header file finished ;)
 
-And ... actually, there you go: that's how `AlgoEngine::iterate()` currently looks like:
+And ... there you go - the implementation part:
 ```cpp
-	void AlgoEngine::iterate()
-	{
-		++iteration;
-		do {						// outer loop: backtracking, inner loop: chunk selection
-			while ( a_id < avail.count()
-					&& com.result[ pageOrder[ p_id ] ].bytes_left > cur_btsleft_thresh )
-				if ( com.result[ pageOrder[ p_id ] ].bytes_left >= chunks[ avail[ a_id ] ] )
-				{
-					if ( take_available() ) 
-						if ( p_id < pageOrder.count() )
-							return emit redo(); // next page -> create a new iteration!
-						else return iterate_complete();
-				} else ++a_id;
-		} while ( !avail.isEmpty() && !make_available() );
+#include "AlgoRunner0.h"
 
-		if ( avail.isEmpty() )
-		{
-			emit page_finished();
-			emit final_solution( iteration, cnt_sel, cnt_unsel, 1.0 );
-		} else {	// We didn't finish, so backtracking must have jumped a page back
-			if ( pageOrder.isEmpty() || p_id >= pageOrder.count() )
-				emit final_solution( iteration, cnt_sel, cnt_unsel, avail.isEmpty() );
-			else emit redo();
-		}
+using namespace Qt::StringLiterals;
+
+const QString AlgoRunner0::name_in_factory = u"basic implementation with dead pages."_s;
+
+void AlgoRunner0::iterate()
+{
+	++iteration;
+	do { // Außen: Backtracking, Innen: Number Selecting
+		while ( a_id < avail.count()
+				&& pages[ pageOrder[ p_id ] ]._.bytes_left > cur_btsleft_thresh )
+			if ( pages[ pageOrder[ p_id ] ]._.bytes_left >= chunks[ avail[ a_id ] ].size )
+			{
+				if ( take_available() )
+					if ( p_id < pageOrder.count() )
+						return emit redo(); // Nächste Page -> neue Iteration!
+					else return iterate_complete();
+			} else ++a_id;
+	} while ( !avail.isEmpty() && !make_available() );
+
+	if ( avail.isEmpty() )
+	{
+		if ( p_id < pageOrder.count() ) emit page_finished( pageOrder[ p_id ] );
+		emit final_solution( iteration, cnt_sel, cnt_unsel, 1.0 );
+	} else {
+		// Wir sind also nicht fertig geworden, keine Pause angefragt -> das heisst das
+		// Backtracking hat einen Seitensprung gemacht.
+		if ( pageOrder.isEmpty() || p_id >= pageOrder.count() )
+			emit final_solution( iteration, cnt_sel, cnt_unsel, avail.isEmpty() );
+		else emit redo();
 	}
+}
+
+void AlgoRunner0::iterate_complete()
+{   ...   }
 ```
 ---
-So all in all you can use these two code blocks to start your own derrivate of `AlgoRunner`.  But
-how to get it into the application?
+So all in all you can use these two code blocks to start your own derrivate of `WorkerBase`.  But
+how to get it into the application?  Nothing more, just derive correctly ;)
 
-Now `Algo` simply checks if it knows how to create an AlgoRunner as soon as a simulation shall be
-started.  There is `Algo::createRunner`, which initiates to nullptr and can be changed using
-`setCreateRunner()`. It needs a function pointer to a creator function.  As `AlgoRunner` needs a
-`AlgoCom &` for construction, this must be the parameter a creator function accepts:
-```cpp
-	using RunnerCreatorFunc = std::function< AlgoRunner *( AlgoCom & ) >;
-```
-Please also have a look at "PackerTester.cpp:94":
-```cpp
-	t_algo->setRunnerCreator( []( Algo::AlgoCom &com_obj )
-							  { return new Algo::AlgoEngine( com_obj ); } );
-```
-This is the way, how currently a creator function is set up.  As you can see, the given lambda
-expression simply allocates a new instance of `AlgoEngine` on the heap, constructs it with the
-given parameter and returns a pointer to it.
-
-Which makes the current UI static ...
-
-... At this point I must admit I have not yet done all that's possible to integrate another algorithm
-seamlessly.  Steps that will follow (if I can make it work with Qt, that is):
-- add a "Algorithm combo-Box" to Algo::Ui
-- integrate a self-registering factory into Algo
-
-That way in the future it will be sufficient, to simply derive off AlgoRunner with a specific
-method and after compiling, it simply is there, listed inside that combo box.  That way after
-compiling and creating a Designer DLL (CMake target "DesignerPlugin"), the whole would be even
-runnable from within Qt Designer using the "preview" functionality, so not even an application
-around would be neccessary.  Future music, gotto go implement it :smile:
+- derive using the CRTP-mix-in `Algo::Factory< Algo::WorkerBase >::Registrar<>`
+- declare and define `name_in_factory`
+- declare and implement `iterate()`
+- if you declare and define a CTor, make sure it's a CTor without parameters, like a default CTor
+  - but really, there's no need to...
