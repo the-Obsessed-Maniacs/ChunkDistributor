@@ -1,15 +1,10 @@
 #pragma once
 
-#include "AlgoFactory.h"
+#include "Algo.h"
 
-#define CommandWURST( T )                                                                          \
-	class CommandWurst                                                                             \
-	{                                                                                              \
-		Q_OBJECT                                                                                   \
-	}
-#undef CommandWURST
+using namespace Algo;
 
-class AlgoRunner0 : public Algo::AlgoWorker::Registrar< AlgoRunner0 >
+class AlgoRunner0 : public AlgoWorker::Registrar< AlgoRunner0 >
 {
 	Q_OBJECT
 
@@ -20,4 +15,7 @@ class AlgoRunner0 : public Algo::AlgoWorker::Registrar< AlgoRunner0 >
 
   public slots:
 	void iterate() override;
+
+  protected:
+	void iterate_complete();
 };

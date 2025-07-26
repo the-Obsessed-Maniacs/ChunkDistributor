@@ -90,11 +90,8 @@ PackerTester::PackerTester( QWidget *parent )
 	a->setEasingCurve( QEasingCurve::OutBounce );
 	a->start( QAbstractAnimation::DeleteWhenStopped );
 
-	// Der andere Teil dieser App: Algo und Co.
-	t_algo->setRunnerCreator( []( Algo::AlgoCom &com_obj )
-							  { return new Algo::AlgoEngine( com_obj ); } );
 	connect( t_algo,
-			 &Algo::Algo::stateMessageChanged,
+			 &Algo::Algorithm::stateMessageChanged,
 			 [ this ]( QString msg ) { sb->showMessage( msg ); } );
 }
 

@@ -203,17 +203,14 @@
          </widget>
         </item>
         <item row="5" column="0">
-         <widget class="QPushButton" name="pb_viscor">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
+         <widget class="QLabel" name="l_algo">
           <property name="text">
-           <string>Correct Pos</string>
-          </property>
-          <property name="icon">
-           <iconset theme="document-properties"/>
+           <string>Algorithm to use:</string>
           </property>
          </widget>
+        </item>
+        <item row="5" column="1">
+         <widget class="QComboBox" name="cb_algo"/>
         </item>
        </layout>
       </widget>

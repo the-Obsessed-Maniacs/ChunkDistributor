@@ -50,6 +50,7 @@ namespace Algo
 		, _w( bytePixels * bytes )
 		, _myText( u"Chunk #%1 - %2 Bytes"_s.arg( id, 2, 16, QChar{ '0' } ).arg( bytes ) )
 	{
+		setToolTip( _myText );
 		auto fm = QFontMetricsF( parent->font() );
 		auto tw = _w - 2 * hm();
 		if ( fm.horizontalAdvance( _myText ) >= tw )
@@ -79,15 +80,16 @@ namespace Algo
 		: QGraphicsObject( parent )
 		, PositionAni::Mated< Page >()
 		, _start_address( start_address )
-		, _end_address( end_address )
-		, _leftNow( end_address - start_address )
+		, _end_address( end_address > 0 ? end_address : ( start_address + 256 ) & 0xff00 )
+		, _leftNow( _end_address - start_address )
 		, _myText( u"%3 - start: $%1, ($%2=>%4)"_s.arg( start_address, 4, 16, QChar{ '0' } )
-					   .arg( end_address - start_address, 2, 16, QChar{ '0' } )
+					   .arg( _leftNow, 2, 16, QChar{ '0' } )
 					   .arg( start_address & ~0xffu, 2, 16, QChar{ '0' } )
-					   .arg( end_address - start_address ) )
+					   .arg( _leftNow ) )
 		, _myState( none )
 	{
 		setZValue( .5 );
+		setToolTip( _myText );
 	}
 
 	void Page::setCurrentResult( QString content_string, int content_size, Status changed_state )
@@ -201,8 +203,7 @@ namespace Algo
 		initBuildChunks( chunks );
 	}
 
-	AlgoGfx::AlgoGfx( const QSize &currentViewSize, const QList< quint32 > &chunks,
-					  const QList< quint64 > &pages )
+	AlgoGfx::AlgoGfx( const QSize &currentViewSize, const ChunkList &chunks, const PageList &pages )
 		: QGraphicsWidget( nullptr )
 		, _cols( 1 )
 		, _sbs( true )
@@ -217,8 +218,9 @@ namespace Algo
 		_sizeRatioTarget = s.width() / s.height();
 		// Initialkonfiguration der Elemente erstellen.  Zumindest für Pages sollte es noch eine Art
 		// "Nachproduktionsmöglichkeit" geben...
-		for ( const auto p : pages ) addNewPage( p & 0xffff, ( p >> 16 ) & 0xffff, false );
-		initBuildChunks( chunks );
+		for ( const auto p : pages )
+			addNewPage( p.start_addr, ( uint( p.end_addr ) << 16 ) | p.bytes_left, false );
+		initBuildChunks( *reinterpret_cast< const QList< uint > * >( &chunks ) );
 	}
 
 	Page *AlgoGfx::addNewPage( uint address, uint enda_size, bool single_call )
@@ -459,10 +461,6 @@ namespace Algo
 				new Chunk( this, chunks[ c_id ] & 0xffffu, c_id, chunks[ c_id ] >> 16 );
 
 		updateMyGeometry();
-
-		qDebug() << "AlgoGfx::CTor(" << this << ") done - got:" << _chunks.count()
-				 << "chunks (positions:" << _chunk_pos.count() << "), and" << _pages.count()
-				 << "pages (positions:" << _page_pos.count() << ")";
 	}
 
 	qreal AlgoGfx::freeChunkOtherSize( qreal width )

@@ -64,7 +64,7 @@ class ChunkObj
 	Q_OBJECT
 
   public:
-	ChunkObj( QGraphicsWidget *parent, Chunk &&data );
+	ChunkObj( QGraphicsWidget *parent, ::Chunk &&data );
 	virtual ~ChunkObj() = default;
 
 	quint16 bytes() const { return myData.size; }
@@ -79,7 +79,7 @@ class ChunkObj
   public slots:
 
   private:
-	Chunk	myData;
+	::Chunk myData;
 	QString myText, shortText;
 	int		tw, sw;
 };

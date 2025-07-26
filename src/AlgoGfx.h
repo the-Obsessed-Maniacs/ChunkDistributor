@@ -289,8 +289,8 @@ namespace Algo
 
 		explicit AlgoGfx( const QSize& currentViewSize, const QList< quint32 >& chunks,
 						  const QMap< quint16, quint32 >& pages );
-		explicit AlgoGfx( const QSize& currentViewSize, const QList< quint32 >& chunks,
-						  const QList< quint64 >& pages );
+		explicit AlgoGfx( const QSize& currentViewSize, const ChunkList& chunks,
+						  const PageList& pages );
 		virtual ~AlgoGfx() = default;
 
 		Page* addNewPage( uint address, uint enda_size, bool single_call = true );

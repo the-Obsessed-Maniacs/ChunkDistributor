@@ -26,7 +26,7 @@
       <property name="tabBarAutoHide">
        <bool>true</bool>
       </property>
-      <widget class="Algo::Algo" name="t_algo">
+      <widget class="Algo::Algorithm" name="t_algo">
        <property name="showDescription" stdset="0">
         <bool>true</bool>
        </property>
@@ -37,7 +37,7 @@
         <number>250</number>
        </property>
        <property name="showAnimation" stdset="0">
-        <bool>false</bool>
+        <bool>true</bool>
        </property>
        <attribute name="title">
         <string>Page Filler Algorithmus</string>
@@ -310,7 +310,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
   <customwidget>
-   <class>Algo::Algo</class>
+   <class>Algo::Algorithm</class>
    <extends>QWidget</extends>
    <header>Algo.h</header>
    <container>1</container>

@@ -27,7 +27,7 @@ class DesignerPlugin
 	QString	 name() const override;
 	QString	 toolTip() const override;
 	QString	 whatsThis() const override;
-	QWidget *createWidget( QWidget *parent ) override { return new Algo::Algo( parent ); }
+	QWidget *createWidget( QWidget *parent ) override { return new Algo::Algorithm( parent ); }
 	void	 initialize( QDesignerFormEditorInterface *core ) override;
 
   private:
