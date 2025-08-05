@@ -1,4 +1,5 @@
 # <u>Chunk Distributor - the chunk distribution visualizer</u>
+![](/docs/pix/sc_mp.png)
 <!--TOC-->
   - [About the project / idea](#about-the-project-idea)
   - [About this tool](#about-this-tool)
