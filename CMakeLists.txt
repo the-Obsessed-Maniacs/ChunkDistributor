@@ -11,6 +11,7 @@ find_package( Qt${QT_VERSION_MAJOR}
         Gui
         Widgets
 		UiPlugin
+		Charts
 )
 qt_standard_project_setup()
 qt_add_plugin( DesignerPlugin )

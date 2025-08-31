@@ -43,6 +43,7 @@ namespace Algo
 			pageOrder.insert( p_id, id );
 		}
 		p_id = a_id = iteration = cnt_sel = cnt_unsel = lastIt = cur_btsleft_thresh = 0;
+		currentPage = &pages[ pageOrder[ p_id ] ];
 		connect( this, &WorkerBase::redo, this, &WorkerBase::pre_re_iterate, Qt::QueuedConnection );
 		emit state_changed( current_state = State::init_bit );
 	}
@@ -64,10 +65,10 @@ namespace Algo
 		const auto &c = chunks[ chunk_id ];
 		a_id		  = 0;
 		while ( a_id < avail.count()
-				&& ( c.size < chunks.at( avail[ a_id ] ).size
-					 || ( c.size == chunks.at( avail[ a_id ] ).size
-						  && ( chunks.at( avail[ a_id ] ).prio < c.prio
-							   || chunks.at( avail[ a_id ] ).prio == c.prio
+				&& ( c.size < chunks[ avail[ a_id ] ].size
+					 || ( c.size == chunks[ avail[ a_id ] ].size
+						  && ( chunks[ avail[ a_id ] ].prio < c.prio
+							   || chunks[ avail[ a_id ] ].prio == c.prio
 									  && avail[ a_id ] < chunk_id ) ) ) )
 			++a_id;
 		avail.insert( a_id++, chunk_id );
@@ -77,16 +78,18 @@ namespace Algo
 	{
 		assert( a_id < avail.count() && p_id < pageOrder.count() );
 		++cnt_sel;
-		auto  id  = avail.takeAt( a_id );
-		auto &pcp = pages[ pageOrder[ p_id ] ];
+		const auto	id	= avail.takeAt( a_id );
+		const auto &c	= chunks[ id ];
+		auto	   &pcp = *currentPage;
 		pcp.selection.append( id );
-		if ( ( pcp._.bytes_left -= chunks.at( id ).size ) <= cur_btsleft_thresh )
+		if ( ( pcp._.bytes_left -= c.size ) <= cur_btsleft_thresh )
 		{
 			// Page finished - jetzt haben wir eine neue best solution
 			QWriteLocker lck( &lock );
 			pcp.solution = pcp.selection;
 			emit page_finished( pcp._.start_addr );
 			++p_id, a_id = 0;
+			currentPage = ( p_id < pageOrder.count() ) ? &pages[ pageOrder[ p_id ] ] : nullptr;
 			return true;
 		} else return false;
 	}
@@ -95,27 +98,26 @@ namespace Algo
 	{
 		assert( p_id < pageOrder.count() );
 		++cnt_unsel;
-		auto &pcp = pages[ pageOrder[ p_id ] ];
+		auto &pcp = *currentPage;
 		if ( pcp.selection.isEmpty() )
 		{
 			// page backtracking needs to happen:
 			// -> p_id == 0 -> smallest page? Cannot decrement -> becomes bad, cannot fill it.
 			// -> else --p_id
-			//  -> both should also send a signal, as the current page changes, thus a page_solution
-			//  has changed for now.
 			QWriteLocker lck( &lock );
 			pcp.solution.clear();
 			if ( p_id > 0 ) --p_id; // go backtrack the previous page ...
 			else
 			{ // mark page as not considered anymore
-				pcp.selection.append( -1 );
-				badPages.append( pageOrder.takeFirst() ), a_id = 0; // ... start again ...
+				pcp.selection.emplace_back( -1 );
+				badPages.emplace_back( pageOrder.takeFirst() ), a_id = 0; // ... start again ...
 			}
+			currentPage = &pages[ pageOrder[ p_id ] ];
 			emit page_finished( pcp._.start_addr );
 			return true; // return true to signal end of inner loop, as a page jump happened
 		}
 		auto c_id = pcp.selection.takeLast();
-		pcp._.bytes_left += chunks.at( c_id ).size;
+		pcp._.bytes_left += chunks[ c_id ].size;
 		sort_into_avail( c_id );
 		return false;
 	}
@@ -145,7 +147,7 @@ namespace Algo
 	Algorithm::Algorithm( QWidget *pw )
 		: QWidget( pw )
 		, idleProc( new QChronoTimer( this ) )
-		, thread( new QThread( this ) )
+		, thread( new QThread )
 	{
 		setupUi( this );
 		setNPrio( sb_prio_cnt->value() );
@@ -175,7 +177,7 @@ namespace Algo
 	}
 	Algorithm::~Algorithm()
 	{
-		if ( thread ) thread->quit(), thread->wait();
+		if ( thread ) thread->quit(), thread->wait(), delete thread;
 	}
 	bool Algorithm::eventFilter( QObject *o, QEvent *e )
 	{
@@ -355,17 +357,12 @@ namespace Algo
 			if ( worker = AlgoWorker::make( cb_algo->currentText() ) )
 			{
 				worker->setInitData( chunks, pages );
-				connect( worker, &WorkerBase::final_solution, this, &Algorithm::finalSolution,
-						 Qt::QueuedConnection );
-				connect( worker, &WorkerBase::state_changed, this, &Algorithm::stateChange,
-						 Qt::QueuedConnection );
-				connect( worker, &WorkerBase::page_finished, this, &Algorithm::pageFinished,
-						 Qt::QueuedConnection );
-				connect( this, &Algorithm::do_continue, worker, &WorkerBase::iterate,
-						 Qt::QueuedConnection );
-				connect( this, &Algorithm::do_pause, worker, &WorkerBase::pause,
-						 Qt::QueuedConnection );
 				worker->moveToThread( thread );
+				connect( worker, &WorkerBase::final_solution, this, &Algorithm::finalSolution );
+				connect( worker, &WorkerBase::state_changed, this, &Algorithm::stateChange );
+				connect( worker, &WorkerBase::page_finished, this, &Algorithm::pageFinished );
+				connect( this, &Algorithm::do_continue, worker, &WorkerBase::iterate );
+				connect( this, &Algorithm::do_pause, worker, &WorkerBase::pause );
 				if ( !thread->isRunning() ) thread->start( QThread::HighestPriority );
 				pb_generate->setEnabled( false );
 				cb_algo->setEnabled( false );

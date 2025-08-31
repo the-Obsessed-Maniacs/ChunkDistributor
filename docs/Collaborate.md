@@ -18,7 +18,7 @@ their own ideas without much effort.
       - [`take_available()`](#take_available)
       - [`make_available()`](#make_available)
     - [`WorkerBase`'s event loop](#workerbases-event-loop)
-  - [deriving your `WorkerBase`](#deriving-your-workerbase)
+  - [deriving your `Worker`](#deriving-your-worker)
 <!--/TOC-->
 ## A short dive into the program
 - main.cpp is a simple Qt app starter
@@ -225,8 +225,7 @@ class AlgoRunner0 : public Factory< WorkerBase >::Registrar< AlgoRunner0 >
 	Q_OBJECT
 
   public:
-	static const QString name_in_factory;
-	virtual ~AlgoRunner0() = default;
+	static const char *name_in_factory;
 
   public slots:
 	void iterate() override;
@@ -255,9 +254,7 @@ And ... there you go - the implementation part:
 ```cpp
 #include "AlgoRunner0.h"
 
-using namespace Qt::StringLiterals;
-
-const QString AlgoRunner0::name_in_factory = u"basic implementation with dead pages."_s;
+const char * AlgoRunner0::name_in_factory = "basic implementation with dead pages.";
 
 void AlgoRunner0::iterate()
 {

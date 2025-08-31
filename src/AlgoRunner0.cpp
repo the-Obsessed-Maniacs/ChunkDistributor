@@ -2,20 +2,18 @@
 
 using namespace Qt::StringLiterals;
 
-const auto AlgoRunner0::name_in_factory = u"basic implementation with dead pages."_s;
+const char* AlgoRunner0::name_in_factory = "basic implementation with dead pages.";
 
-void	   AlgoRunner0::iterate()
+void		AlgoRunner0::iterate()
 {
 	++iteration;
 	do { // Außen: Backtracking, Innen: Number Selecting
-		while ( a_id < avail.count()
-				&& pages[ pageOrder[ p_id ] ]._.bytes_left > cur_btsleft_thresh )
-			if ( pages[ pageOrder[ p_id ] ]._.bytes_left >= chunks[ avail[ a_id ] ].size )
+		while ( a_id < avail.count() && currentPage->_.bytes_left > cur_btsleft_thresh )
+			if ( currentPage->_.bytes_left >= chunks[ avail[ a_id ] ].size )
 			{
 				if ( take_available() )
-					if ( p_id < pageOrder.count() )
-						return emit redo(); // Nächste Page -> neue Iteration!
-					else return iterate_complete();
+					if ( p_id >= pageOrder.count() ) return iterate_complete();
+					else ++iteration;
 			} else ++a_id;
 	} while ( !avail.isEmpty() && !make_available() );
 

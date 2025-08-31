@@ -295,40 +295,44 @@ namespace Algo
 	// denen aber schon andere Pages verarbeitet sein könnten.
 	void AlgoGfx::changePage( const AlgoPage &pg )
 	{
-		// Unterschiede zur obigen Implementation:
-		// ->   selektives Zurücksetzen der Zugehörigkeiten (dauert vmtl. länger) für die jew. Page
-		for ( int i = 0; i < _chunks.count(); ++i )
-			if ( ( static_cast< int >( _chunk_pos[ i ].w() ) == pg._.start_addr )
-				 && !pg.solution.contains( i ) )
-				_chunk_pos[ i ].setW( -1.f ), _moved_chunks.insert( i );
-		// Page mit neuen Daten füttern, placement passiert ebenso später
-		auto gbs  = !pg.solution.isEmpty();
-		auto out  = !gbs && pg.selection.count() == 1 && pg.selection.first() == -1;
-		auto done = gbs && pg.solution == pg.selection;
-		auto tx	  = gbs	  ? u""_s
-					: out ? u"not considered anymore - paged out..."_s
-						  : u"... waiting ..."_s;
-		auto bts  = 0;
-		if ( gbs )
+		if ( pg._.value )
 		{
-			auto first = true;
-			auto px	   = bsf() * ( pg._.start_addr & 0xff ) + hm;
-			for ( auto cid : pg.solution )
+			// Unterschiede zur obigen Implementation:
+			// ->   selektives Zurücksetzen der Zugehörigkeiten (dauert vmtl. länger) für die jew.
+			// Page
+			for ( int i = 0; i < _chunks.count(); ++i )
+				if ( ( static_cast< int >( _chunk_pos[ i ].w() ) == pg._.start_addr )
+					 && !pg.solution.contains( i ) )
+					_chunk_pos[ i ].setW( -1.f ), _moved_chunks.insert( i );
+			// Page mit neuen Daten füttern, placement passiert ebenso später
+			auto gbs  = !pg.solution.isEmpty();
+			auto out  = !gbs && pg.selection.count() && pg.selection.first() == -1;
+			auto done = gbs && pg.solution == pg.selection;
+			auto tx	  = gbs	  ? u""_s
+						: out ? u"not considered anymore - paged out..."_s
+							  : u"... waiting ..."_s;
+			auto bts  = 0;
+			if ( gbs && !out )
 			{
-				auto cb = _chunks[ cid ]->bytes();
-				tx += u"%3Chunk #%1 ($%2)"_s.arg( cid ).arg( cb ).arg( first	   ? first = false,
-																	   "... got: " : " + " );
-				bts += cb;
-				QVector4D np{ px, float( vm + fh + vs ), 0.f, float( pg._.start_addr ) };
-				if ( !qFuzzyCompare( np, _chunk_pos[ cid ] ) )
-					_chunk_pos[ cid ] = np, _moved_chunks.insert( cid );
-				px += bsf() * cb;
+				auto first = true;
+				auto px	   = bsf() * ( pg._.start_addr & 0xff ) + hm;
+				for ( auto cid : pg.solution )
+				{
+					auto cb = _chunks[ cid ]->bytes();
+					tx += u"%3Chunk #%1 ($%2)"_s.arg( cid ).arg( cb ).arg( first ? first = false,
+																		   "... got: " : " + " );
+					bts += cb;
+					QVector4D np{ px, float( vm + fh + vs ), 0.f, float( pg._.start_addr ) };
+					if ( !qFuzzyCompare( np, _chunk_pos[ cid ] ) )
+						_chunk_pos[ cid ] = np, _moved_chunks.insert( cid );
+					px += bsf() * cb;
+				}
 			}
+			_pages[ pg._.start_addr ]->setCurrentResult( tx, bts,
+														 out	? Page::deactivated
+														 : done ? Page::finished
+																: Page::none );
 		}
-		_pages[ pg._.start_addr ]->setCurrentResult( tx, bts,
-													 out	? Page::deactivated
-													 : done ? Page::finished
-															: Page::none );
 	}
 
 	void AlgoGfx::commitPages( bool animated )
@@ -346,8 +350,8 @@ namespace Algo
 			auto poff = pid >= 0 ? QVector4D{ _page_pos[ pid ] } : QVector4D{};
 
 			_chunk_pos[ id ] += poff; // Verschiebung in Page + Verschiebung Page
-			_chunks[ id ]->to( _chunk_pos[ id ].toVector3D(), animated, { -256.f, 0.f },
-							   { 0.f, -128.f } );
+			_chunks[ id ]->to( _pages[ pid ], _chunk_pos[ id ].toVector3D(), animated,
+							   { -256.f, 0.f }, { 0.f, -128.f } );
 		}
 		_moved_chunks.clear();
 	}
@@ -493,7 +497,7 @@ namespace Algo
 				v = _sbs ? QVector4D{ p.y(), width - p.x(), -90.f, -1 } : QVector4D{ p, 0, -1 };
 				if ( !qFuzzyCompare( _chunk_pos[ cid ], v + QVector4D{ _bulkOffset } ) )
 				{
-					_chunks[ cid ]->to( v.toVector3D() + QVector3D{ _bulkOffset }, animated );
+					_chunks[ cid ]->to( this, v.toVector3D() + QVector3D{ _bulkOffset }, animated );
 					_chunk_pos[ cid ] = v + QVector4D{ _bulkOffset };
 				}
 				p[ 0 ] += cw + hs;

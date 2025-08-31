@@ -154,11 +154,12 @@ namespace Algo
 		int				 a_id{ 0 }, p_id{ -1 }; // available- and page-IDs
 		ChunkList		 chunks;				// in the first place, only size is needed!
 		PageMap			 pages;
+		AlgoPage		*currentPage{ nullptr };
 		QList< int >	 avail;		// chunk IDs available in "bulk"
 		QList< quint16 > pageOrder, // sorted list of Page IDs in processing order,
 			badPages; // pages sorted out due to obviously not being solvable with the current data
 					  // set (i.e. just can't figure any way to fill the chunk with available data)
-		State				   current_state;
+		State				   current_state{ invalid };
 		quint64				   cnt_sel{ 0 }, cnt_unsel{ 0 }, iteration{ 0 }, lastIt{ 0 };
 		int					   cur_btsleft_thresh{ 0 };
 		mutable QReadWriteLock lock;

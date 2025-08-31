@@ -29,16 +29,17 @@ set( PLUGIN_SOURCES
 	AlgoRunner0.h
 	AlgoRunner0.cpp
 )
-#qt_add_executable( FactoryTest Algo.ui AlgoFactory.h AlgoFactory.cpp AlgoGfx.h AlgoGfx.cpp AlgoRunner0.h AlgoRunner0.cpp )
-#set_target_properties( FactoryTest
-#    PROPERTIES
-#        WIN32_EXECUTABLE TRUE
-#)
-#target_link_libraries( FactoryTest PUBLIC
-#    Qt::Core
-#    Qt::Gui
-#    Qt::Widgets
-#)
+qt_add_executable( FTest FTest.ui FTest.h FTest.cpp )
+set_target_properties( FTest
+    PROPERTIES
+        WIN32_EXECUTABLE TRUE
+)
+target_link_libraries( FTest PUBLIC
+    Qt::Core
+    Qt::Gui
+    Qt::Widgets
+	Qt::Charts
+)
 target_sources( DesignerPlugin PUBLIC ${PLUGIN_SOURCES} )
 target_sources( ${PROJECT_NAME} PUBLIC ${PROJECT_SOURCES} )
 

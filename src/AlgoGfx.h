@@ -87,6 +87,12 @@ namespace PositionAni
 			if ( !animated ) moveToParent( newParent, target_pos_parentCoord, outbound );
 			else animateToParent( newParent, target_pos_parentCoord, inbound, outbound );
 		}
+		void to( QGraphicsObject* newParent, QVector3D target_pos_rot_sceneCoord, bool animated,
+				 QVector2D inbound = {}, QVector2D outbound = {} )
+		{
+			target_pos_rot_sceneCoord -= QVector3D{ reparentSelf( newParent ) };
+			to( target_pos_rot_sceneCoord, animated, inbound, outbound );
+		}
 		void to( QPointF target_pos_parentCoord, bool animated, QVector2D inbound = {},
 				 QVector2D outbound = {} )
 		{
