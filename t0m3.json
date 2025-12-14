@@ -1,3 +1,23 @@
 {
-  
+  "name": "T0M³",
+  "version": "0.0.1.2",
+  "tools": [
+    {
+      "name": "QStyleIconLister",
+      "releases": [
+        {
+          "platform": "WINDOWS",
+          "uri":"https://github.com/the-Obsessed-Maniacs/QStyleIconLister/releases/download/Qt/QStyleIconLister.exe"
+        }
+      ]
+    },
+    {
+      "name": "ChunkDistributor",
+      "releases" : [
+        { "platform": "WINDOWS",
+          "uri": "https://github.com/the-Obsessed-Maniacs/ChunkDistributor/releases/download/0.0.1_public_beta/ChunkDistributor_win64_fullRedist.7z"
+        }
+      ]
+    }
+  ]
 }
